@@ -93,11 +93,6 @@ int main(int argc, char **argv) {
 
   int** pipes_max = malloc(sizeof(int*) * pnum);
   int** pipes_min = malloc(sizeof(int*) * pnum);
-  int* proc_max_arr = malloc(sizeof(int) * pnum);
-  int* proc_min_arr = malloc(sizeof(int) * pnum);
-
-  int part_size = array_size/pnum;
-  int pointer = 0;
 
   for (int i = 0; i < pnum; i++) {
       //init pipe
@@ -116,6 +111,20 @@ int main(int argc, char **argv) {
       pipes_min[i] = p_min;
   }
 
+  int arr_part_size = array_size/pnum;
+  int arr_parts[pnum];
+  int pointer = 0;
+  //let pnum be 3 and arr size is 20
+  //part size be 6
+  //fill parts with 0 6 12
+  arr_parts[0] = 0;
+  for(int i = 1; i < pnum; i++){
+    arr_parts[i] = arr_parts[i-1] + arr_part_size;
+  }
+
+  FILE* f;
+  f = fopen("buff", "w");
+
   for (int i = 0; i < pnum; i++) {
     //pid is > 0 for main process and 0 for child
     pid_t child_pid = fork();
@@ -126,31 +135,53 @@ int main(int argc, char **argv) {
       if (child_pid == 0) {
         // child process - parallel code here
         
-        int max = INT_MAX;
-        int min = INT_MIN;
-
-        close(pipes_max[i][0]);
-        close(pipes_min[i][0]);
+        int max = INT_MIN;
+        int min = INT_MAX;
 
         //find min/max
-        //write code there
-        //use step: 1,5,9; 2,6,10 etc for every process
-        //step is arr_size/procs_num
+        //every thread calculate its own part of array
         //if arr have odd size give rest of it to procs_num-1 proc
-        //pipe pass all variables by link, so use different min/max
-        //good luck!
+        if(i != pnum-1){
+          for(int j = arr_parts[i]; j < arr_parts[i+1]; j++){
+            if(max < array[j]){
+              max = array[j];
+            }
+            if(min > array[j]){
+              min = array[j];
+            }
+          }
+        }
+        else{
+          for(int j = arr_parts[i]; j < array_size; j++){
+            if(max < array[j]){
+              max = array[j];
+            }
+            if(min > array[j]){
+              min = array[j];
+            }
+          }
+        }
 
-
-        //write min/max
-        write(pipes_min[i][1], &max, sizeof(int));
-        write(pipes_max[i][1], &min, sizeof(int));
-
-        close(pipes_max[i][1]);
-        close(pipes_min[i][1]);
         if (with_files) {
-          // use files here
+          char name[6];
+          name[0] = 'b'; name[1] = 'u';
+          name[2] = 'f'; name[3] = 'f';
+          name[4] = i + '0'; name[5] = '\0';
+
+          fprintf(f,"%d %d ", max, min);
+          fclose(f);
         } else {
-          // use pipe here
+          close(pipes_max[i][0]);
+          close(pipes_min[i][0]);
+
+          //write min/max
+          write(pipes_min[i][1], &min, sizeof(int));
+          write(pipes_max[i][1], &max, sizeof(int));
+
+          close(pipes_max[i][1]);
+          close(pipes_min[i][1]);
+
+          //check if min max pass right, please
         }
         return 0;
       }
@@ -161,29 +192,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  int count = -1;
-
-  //this block should wait for all process to be done and sync them?
+  //why this block is there?
   while (active_child_processes > 0) {
-    count++;
-    int pipe_num = count;
-    close(pipes_max[pipe_num][1]);
-    close(pipes_min[pipe_num][1]);
-
-    printf("\npipe_num: %d\n", pipe_num);
-
-    int read_num = 0;
-
-    read(pipes_max[pipe_num][0],&read_num,sizeof(int));
-    proc_max_arr[pipe_num] = read_num;
-    printf("read max: %d\n", proc_max_arr[pipe_num]);
-
-    read(pipes_min[pipe_num][0],&read_num,sizeof(int));
-    proc_min_arr[pipe_num] = read_num;
-    printf("read min: %d\n", read_num);
-
-    //close(pipes_max[pipe_num][0]);
-    //close(pipes_min[pipe_num][0]);
     active_child_processes -= 1;
   }
 
@@ -192,15 +202,23 @@ int main(int argc, char **argv) {
   min_max.min = INT_MAX;
   min_max.max = INT_MIN;
 
+  f = fopen("buff", "r");
   for (int i = 0; i < pnum; i++) {
-    int min = INT_MAX;
     int max = INT_MIN;
+    int min = INT_MAX;
 
     //there we set our min/max nums
     if (with_files) {
-      // read from files
-    } else {
-      // read from pipes
+      while(wait(NULL)>0);
+      fscanf(f, "%d", &max);
+      fscanf(f, "%d", &min);
+    }
+    else {
+      close(pipes_max[i][1]);
+      close(pipes_min[i][1]);
+
+      read(pipes_max[i][0],&max,sizeof(int));
+      read(pipes_min[i][0],&min,sizeof(int));
     }
 
     //there we fill the struture of min/max nums
