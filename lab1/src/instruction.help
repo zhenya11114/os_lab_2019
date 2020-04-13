@@ -8,3 +8,6 @@ cat numbers.txt | xargs ./higher.sh
     doing the main trick
     use this to push arguments
     from file to script
+
+echo $PATH - to show current path variable
+export PATH=$PATH:/home/evgeniy/os_lab_2019/lab1/src - to add folder to path variable
