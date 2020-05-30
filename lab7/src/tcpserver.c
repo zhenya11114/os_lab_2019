@@ -7,15 +7,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define SERV_PORT 10050
-#define BUFSIZE 100
 #define SADDR struct sockaddr
 
-int main() {
+int main(int argc, char *argv[]) {
   const size_t kSize = sizeof(struct sockaddr_in);
 
   int lfd, cfd;
   int nread;
+  int BUFSIZE = atoi(argv[1]);
+  int SERV_PORT = atoi(argv[2]);
   char buf[BUFSIZE];
   struct sockaddr_in servaddr;
   struct sockaddr_in cliaddr;
