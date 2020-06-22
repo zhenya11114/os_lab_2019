@@ -94,9 +94,9 @@ uint64_t AskServ(const struct ServerArgs *arg) {
   uint64_t answer = 0;
   memcpy(&answer, response, sizeof(uint64_t));
   printf("From server: %llu\n", answer);
-
+close(sck);
   return answer;
-  close(sck);
+  
   return 1;
 }
 

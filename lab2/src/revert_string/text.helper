@@ -8,3 +8,4 @@ gcc main.o -Lpath -llib #main.o should be situated left from added library
 #shared and static libs compile exactly the same way with gcc
 #the difference is that shared lib could be situated anywhere
 #also obj.o should be compiled with -fPIC flag for the shared lib
+#just like gcc -c -fPIC code.c

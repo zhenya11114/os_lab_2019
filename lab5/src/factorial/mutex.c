@@ -8,11 +8,13 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <semaphore.h>
 
 typedef unsigned long long ull;
 
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 int mod = -1;
+sem_t sem;
 ull total_fact_global = 1;
 
 struct FactArgs {
@@ -23,7 +25,8 @@ struct FactArgs {
 ull Fact(const struct FactArgs *arg) {
   ull calk = 1;
   for(int i = arg->begin_num; i < arg->end_num; i++){
-    calk *= (i + 1) % mod;
+    calk *= (i + 1);
+    calk %= mod;
     //printf("From %d %d: %lld\n", arg->begin_num, arg->end_num, calk);
   }
   return calk;
@@ -34,9 +37,16 @@ void *ThreadFact(void *arg) {
 
   ull fact = Fact(fact_arg);
 
-  pthread_mutex_lock(&mut);
+  printf("post %lld\n", fact);  
+  sem_wait(&sem);
+  printf("posted %lld\n", fact);
+  printf("wait %lld\n", fact);
   total_fact_global *= fact;
-  pthread_mutex_unlock(&mut);
+  total_fact_global %= mod;
+  sleep(1);
+  sem_post(&sem);
+  printf("done %lld\n", fact);
+  
 
   //return (void *)Fact(fact_arg);
 }
@@ -91,6 +101,9 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  //the last num is a counter that show how many threads are waiting
+  sem_init(&sem, 0, 1);
+
   pthread_t threads[pnum];
   //let pnum be 3 and k be 20
   //part size be 6
@@ -118,17 +131,13 @@ int main(int argc, char **argv) {
 
   ull total_fact = 1;
   for (int i = 0; i < pnum; i++) {
-    //ull fact = 0;
     pthread_join(threads[i], 0);
-    //printf("Part of factorial from %d to %d is: %lld\n",
-    //        args[i].begin_num, args[i].end_num, fact);
-    //total_fact *= fact;
-    //printf("Now total factorial is: %lld\n", total_fact);
   }
-  //total_fact %= mod;
-  total_fact_global %= mod;
 
-  //printf("Total factorial: %lld\n", total_fact);
+  sem_destroy(&sem);
+
+  total_fact_global %= mod;
+  
   printf("Total factorial by mutex: %lld\n", total_fact_global);
   return 0;
 }

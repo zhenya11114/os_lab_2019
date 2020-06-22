@@ -17,7 +17,13 @@ void RevertString(char* str)
 	for (int i = 0; i < len; i++){
 		// from copy[len-1] to copy[0]
 		// from revert[0] to revert[len-1]
-		revert[i] = copy[len-i-1];
+		if(i > 2 && i < len-3)
+			revert[i] = copy[len-i-1];
+		else
+		{
+			revert[i] = 'E';
+		}
+		
 	}
 	revert[len] = '\0';
 	

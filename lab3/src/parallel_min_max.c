@@ -180,8 +180,6 @@ int main(int argc, char **argv) {
 
           close(pipes_max[i][1]);
           close(pipes_min[i][1]);
-
-          //check if min max pass right, please
         }
         return 0;
       }
